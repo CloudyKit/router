@@ -33,7 +33,7 @@ var table = map[string][2][]string{
 func TestSplit(t *testing.T) {
 
 	for path, result := range table {
-		parts, names := split(path)
+		parts, names := explode(path)
 		if !stringsEq(parts, result[0]) || !stringsEq(names, result[1]) {
 			t.Errorf("Expected %v %v: %v %v", result[0], result[1], parts, names)
 		}
@@ -46,13 +46,14 @@ var testTable = [][]string{
 	{"/users/:userId", "/users/666f24b7-cf7f-4176-bf07-c6d937e622c9"},
 	{"/users/:userId/companies/:companyId", "/users/666f24b7-cf7f-4176-bf07-c6d937e622c9/companies/666f24b7-cf7f-4176-bf07-c6d937e622c9"},
 	{"/us", "/us"},
+	{"/*fpath", "/", "/site_1/index.html", "/site_1/favicon.png", "/site_1/images/bg.gif"},
 }
 
 func TestTreeLookupSimple(t *testing.T) {
 	router := New()
 	for _, v := range testTable {
 		v := v
-		router.Handle("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
+		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
 			for i := 1; i < len(v); i++ {
 				if r.URL.Path == v[i] {
 					return
@@ -67,7 +68,7 @@ func TestTreeLookupSimple(t *testing.T) {
 	for _, v := range testTable {
 		for i := 1; i < len(v); i++ {
 			t.Log("GET " + v[i])
-			fn, variables := router.Lookup("GET", v[i])
+			fn, variables := router.FindRoute("GET", v[i])
 			if fn == nil {
 				t.Error("Not Found", v[i], variables)
 				continue
@@ -84,7 +85,7 @@ var router = New()
 func TestSetup(t *testing.T) {
 	for _, v := range testTable {
 		v := v
-		router.Handle("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
+		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
 			for i := 1; i < len(v); i++ {
 				if r.URL.Path == v[i] {
 					return
@@ -96,7 +97,7 @@ func TestSetup(t *testing.T) {
 
 func BenchmarkWildCard(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		fn, _ := router.Lookup("GET", testTable[0][1])
+		fn, _ := router.FindRoute("GET", testTable[0][1])
 		if fn == nil {
 			b.Error("Not Found", testTable[0][1])
 			continue
@@ -106,7 +107,7 @@ func BenchmarkWildCard(b *testing.B) {
 
 func BenchmarkPart(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		fn, _ := router.Lookup("GET", testTable[3][1])
+		fn, _ := router.FindRoute("GET", testTable[3][1])
 		if fn == nil {
 			b.Error("Not Found", testTable[3][1])
 			continue
@@ -118,7 +119,7 @@ func BenchmarkManyURLS(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, v := range testTable {
 			for i := 1; i < len(v); i++ {
-				fn, _ := router.Lookup("GET", v[i])
+				fn, _ := router.FindRoute("GET", v[i])
 				if fn == nil {
 					b.Error("Not Found", v[i])
 					continue

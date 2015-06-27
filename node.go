@@ -1,16 +1,17 @@
 package router
 
 import (
-	"net/http"
 	"strings"
 )
 
 const MaxUint8 = ^uint8(0)
 
+//TODO: Idea, add more types of node ex: /services?/?index.html will match /services,/services/,/services/index.html
+
 type node struct {
 	text     string
 	names    []string
-	fn       func(http.ResponseWriter, *http.Request, Variables)
+	handler  Handler
 	wildcard *node
 	colon    *node
 	nodes    nodes
@@ -19,11 +20,7 @@ type node struct {
 
 type nodes []*node
 
-func (a nodes) Len() int           { return len(a) }
-func (a nodes) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a nodes) Less(i, j int) bool { return a[i].text[0] < a[j].text[0] }
-
-func (_node *node) cmp(path string) (*node, int8, int) {
+func (_node *node) nextRoute(path string) (*node, int8, int) {
 
 	if path == "*" {
 		if _node.wildcard == nil {
@@ -70,22 +67,22 @@ func (_node *node) cmp(path string) (*node, int8, int) {
 	return nil, 0, 0
 }
 
-func (_node *node) addNode(parts []string, names []string, fn func(http.ResponseWriter, *http.Request, Variables)) {
+func (_node *node) addRoute(parts []string, names []string, handler Handler) {
 
 	var (
 		ccNode *node
 		cNode  *node
 	)
 
-	cNode, cmpr, idx := _node.cmp(parts[0])
+	cNode, result, idx := _node.nextRoute(parts[0])
 
 RESTART:
 	if cNode == nil {
 		cNode = &node{text: parts[0]}
 		_node.nodes = append(_node.nodes, cNode)
-	} else if cmpr == 1 { //
+	} else if result == 1 { //
 		parts[0] = parts[0][len(cNode.text):]
-		ccNode, cmpr, idx = cNode.cmp(parts[0])
+		ccNode, result, idx = cNode.nextRoute(parts[0])
 		if cNode != nil {
 			_node = cNode
 			cNode = ccNode
@@ -94,7 +91,7 @@ RESTART:
 		ccNode := &node{text: parts[0]}
 		cNode.nodes = append(_node.nodes, ccNode)
 		cNode = ccNode
-	} else if cmpr == -1 {
+	} else if result == -1 {
 		ccNode := &node{text: parts[0]}
 		cNode.text = cNode.text[len(ccNode.text):]
 		ccNode.nodes = nodes{cNode}
@@ -103,74 +100,77 @@ RESTART:
 	}
 
 	if len(parts) == 1 {
-		cNode.fn = fn
+		cNode.handler = handler
 		cNode.names = names
 		return
 	}
 
-	cNode.addNode(parts[1:], names, fn)
+	cNode.addRoute(parts[1:], names, handler)
 }
 
-func (_node *node) getHandler(path string, pindex uint8) (func(http.ResponseWriter, *http.Request, Variables), []string, []string) {
+func (_node *node) findRoute(urlPath string, paramIndex uint8) (Handler, []string, []string) {
 
-	var llPath int
-
-	llPath = len(path)
-	if i := _node.indices[path[0]]; i != MaxUint8 {
+	pathLen := len(urlPath)
+	if i := _node.indices[urlPath[0]]; i != MaxUint8 {
 
 		cNode := _node.nodes[i]
 
-		llNode := len(cNode.text)
-		if llNode > llPath {
+		nodeLen := len(cNode.text)
+		if nodeLen > pathLen {
 			goto COLON
 		}
 
-		if llNode < llPath {
-			if cNode.text == path[0:llNode] {
-				if fn, names, values := cNode.getHandler(path[llNode:], pindex); fn != nil {
-					return fn, names, values
+		if nodeLen < pathLen {
+			if cNode.text == urlPath[0:nodeLen] {
+				if handle, names, values := cNode.findRoute(urlPath[nodeLen:], paramIndex); handle != nil {
+					return handle, names, values
 				}
 			}
 			goto COLON
 		}
-		if cNode.text == path {
-			return cNode.fn, cNode.names, nil
+		if cNode.text == urlPath {
+			if cNode.handler == nil && cNode.wildcard != nil {
+				values := make([]string, paramIndex+1, paramIndex+1)
+				values[paramIndex] = urlPath
+				return cNode.wildcard.handler, cNode.wildcard.names, values
+			}
+			return cNode.handler, cNode.names, nil
 		}
 	}
 
 COLON:
 	if _node.colon != nil {
-		for ix := 0; ix < llPath; ix++ {
-			if path[ix] == '/' {
-				if fn, names, values := _node.colon.getHandler(path[ix:], pindex+1); fn != nil {
+		for ix := 0; ix < pathLen; ix++ {
+			if urlPath[ix] == '/' {
+				if fn, names, values := _node.colon.findRoute(urlPath[ix:], paramIndex+1); fn != nil {
 					if values == nil {
-						values = make([]string, pindex+1, pindex+1)
+						values = make([]string, paramIndex+1, paramIndex+1)
 					}
-					values[pindex] = path[0:ix]
+					values[paramIndex] = urlPath[0:ix]
 					return fn, names, values
 				}
 				goto WILDCARD
 			}
 		}
 
-		if llPath > 0 {
-			values := make([]string, pindex+1, pindex+1)
-			values[pindex] = path
-			return _node.colon.fn, _node.colon.names, values
+		if pathLen > 0 {
+			values := make([]string, paramIndex+1, paramIndex+1)
+			values[paramIndex] = urlPath
+			return _node.colon.handler, _node.colon.names, values
 		}
 	}
 
 WILDCARD:
 	if _node.wildcard != nil {
-		values := make([]string, pindex+1, pindex+1)
-		values[pindex] = path
-		return _node.wildcard.fn, _node.wildcard.names, values
+		values := make([]string, paramIndex+1, paramIndex+1)
+		values[paramIndex] = urlPath
+		return _node.wildcard.handler, _node.wildcard.names, values
 	}
 
 	return nil, nil, nil
 }
 
-func (_node *node) sort() {
+func (_node *node) optimizeRoutes() {
 
 	for i := uint8(0); i < MaxUint8; i++ {
 		_node.indices[i] = MaxUint8
@@ -178,13 +178,13 @@ func (_node *node) sort() {
 
 	for i := 0; i < len(_node.nodes); i++ {
 		_node.indices[_node.nodes[i].text[0]] = uint8(i)
-		_node.nodes[i].sort()
+		_node.nodes[i].optimizeRoutes()
 	}
 	if _node.colon != nil {
-		_node.colon.sort()
+		_node.colon.optimizeRoutes()
 	}
 	if _node.wildcard != nil {
-		_node.wildcard.sort()
+		_node.wildcard.optimizeRoutes()
 	}
 }
 

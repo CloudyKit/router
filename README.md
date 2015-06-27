@@ -1,2 +1,3 @@
-# router
-Fast Router
+# Fastgo Router
+
+Fast router for go
