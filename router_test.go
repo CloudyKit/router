@@ -53,7 +53,7 @@ func TestTreeLookupSimple(t *testing.T) {
 	router := New()
 	for _, v := range testTable {
 		v := v
-		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
+		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Values) {
 			for i := 1; i < len(v); i++ {
 				if r.URL.Path == v[i] {
 					return
@@ -85,7 +85,7 @@ var router = New()
 func TestSetup(t *testing.T) {
 	for _, v := range testTable {
 		v := v
-		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Variables) {
+		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Values) {
 			for i := 1; i < len(v); i++ {
 				if r.URL.Path == v[i] {
 					return

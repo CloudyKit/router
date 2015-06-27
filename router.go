@@ -4,15 +4,15 @@ import (
 	"net/http"
 )
 
-type Handler func(http.ResponseWriter, *http.Request, Variables)
+type Handler func(http.ResponseWriter, *http.Request, Values)
 
 type Router struct {
-	PanicHandler        func(http.ResponseWriter, *http.Request, Variables, interface{})
+	PanicHandler        func(http.ResponseWriter, *http.Request, Values, interface{})
 	NotFoundHandler     Handler
 	RequestStartHandler Handler
 	RequestEndHandler   Handler
 
-	trees map[string]*node
+	trees               map[string]*node
 }
 
 func New() *Router {
@@ -61,13 +61,13 @@ func explode(path string) (parts []string, names []string) {
 	return
 }
 
-func (router *Router) FindRoute(method string, path string) (Handler, Variables) {
+func (router *Router) FindRoute(method string, path string) (Handler, Values) {
 	_node := router.trees[method]
 	if _node == nil {
-		return nil, Variables{}
+		return nil, Values{}
 	}
 	fn, names, values := _node.findRoute(path, 0)
-	return fn, Variables{key: names, values: values}
+	return fn, Values{Keys: names, Values: values}
 }
 
 func (router *Router) AddRoute(method string, path string, fn Handler) {
@@ -95,7 +95,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if router.PanicHandler != nil {
 			if err := recover(); err != nil {
-				router.PanicHandler(w, r, variables)
+				router.PanicHandler(w, r, variables, err)
 			}
 		}
 		if router.RequestEndHandler != nil {
