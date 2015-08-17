@@ -12,7 +12,7 @@ type Router struct {
 	RequestStartHandler Handler
 	RequestEndHandler   Handler
 
-	trees               map[string]*node
+	trees map[string]*node
 }
 
 func New() *Router {

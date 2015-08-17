@@ -128,10 +128,11 @@ func (_node *node) findRoute(urlPath string, paramIndex uint8) (Handler, []strin
 			}
 			goto COLON
 		}
+
 		if cNode.text == urlPath {
 			if cNode.handler == nil && cNode.wildcard != nil {
 				values := make([]string, paramIndex+1, paramIndex+1)
-				values[paramIndex] = urlPath
+				values[paramIndex] = ""
 				return cNode.wildcard.handler, cNode.wildcard.names, values
 			}
 			return cNode.handler, cNode.names, nil
