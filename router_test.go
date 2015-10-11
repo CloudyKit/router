@@ -59,7 +59,43 @@ func TestTreeLookupSimple(t *testing.T) {
 					return
 				}
 			}
-			t.Errorf("GOT %s EXPECTED %s\n", r.URL.Path, v[1:])
+			t.Errorf("GOT %s EXPECTED %s\n", r.URL.Path, v)
+		})
+	}
+
+	t.Log(router.String())
+
+	for _, v := range testTable {
+		for i := 1; i < len(v); i++ {
+			t.Log("GET " + v[i])
+			fn, variables := router.FindRoute("GET", v[i])
+			if fn == nil {
+				t.Error("Not Found", v[i], variables)
+				continue
+			}
+			req, _ := http.NewRequest("GET", v[i], nil)
+			fn(nil, req, variables)
+		}
+	}
+
+}
+
+func TestTreeIndicesBug(t *testing.T) {
+	router := New()
+	testTable := [][]string{
+		{"/", "/"},
+		{"/books", "/books"},
+		{"/source", "/source"},
+	}
+	for _, v := range testTable {
+		v := v
+		router.AddRoute("GET", v[0], func(w http.ResponseWriter, r *http.Request, vp Values) {
+			for i := 1; i < len(v); i++ {
+				if r.URL.Path == v[i] {
+					return
+				}
+			}
+			t.Errorf("GOT %s EXPECTED %s\n", r.URL.Path, v)
 		})
 	}
 
@@ -128,3 +164,38 @@ func BenchmarkManyURLS(b *testing.B) {
 		}
 	}
 }
+
+//
+//func BenchmarkLoopWildCard(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		fn, _ := router.FindRouteLoop("GET", testTable[0][1])
+//		if fn == nil {
+//			b.Error("Not Found", testTable[0][1])
+//			continue
+//		}
+//	}
+//}
+//
+//func BenchmarkLoopPart(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		fn, _ := router.FindRouteLoop("GET", testTable[3][1])
+//		if fn == nil {
+//			b.Error("Not Found", testTable[3][1])
+//			continue
+//		}
+//	}
+//}
+//
+//func BenchmarkLoopManyURLS(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		for _, v := range testTable {
+//			for i := 1; i < len(v); i++ {
+//				fn, _ := router.FindRouteLoop("GET", v[i])
+//				if fn == nil {
+//					b.Error("Not Found", v[i])
+//					continue
+//				}
+//			}
+//		}
+//	}
+//}

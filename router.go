@@ -66,9 +66,21 @@ func (router *Router) FindRoute(method string, path string) (Handler, Values) {
 	if _node == nil {
 		return nil, Values{}
 	}
-	fn, names, values := _node.findRoute(path, 0)
-	return fn, Values{Keys: names, Values: values}
+	fn, values := _node.findRoute(path, 0)
+	if fn != nil {
+		return fn.handler, Values{Keys: fn.names, Values: values}
+	}
+	return nil, Values{}
 }
+
+//func (router *Router) FindRouteLoop(method string, path string) (Handler, Values) {
+//	_node := router.trees[method]
+//	if _node == nil {
+//		return nil, Values{}
+//	}
+//	fn, names, values := _node._findRoute(path, 0)
+//	return fn, Values{Keys: names, Values: values}
+//}
 
 func (router *Router) AddRoute(method string, path string, fn Handler) {
 	parts, names := explode(path)
@@ -90,6 +102,7 @@ func (router *Router) String() string {
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	handler, variables := router.FindRoute(r.Method, r.URL.Path)
 
 	defer func() {
