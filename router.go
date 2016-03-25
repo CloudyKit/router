@@ -1,17 +1,13 @@
-package router
+package Router
 
 import (
+	"fmt"
 	"net/http"
 )
 
-type Handler func(http.ResponseWriter, *http.Request, Values)
+type Handler func(http.ResponseWriter, *http.Request, Parameter)
 
 type Router struct {
-	PanicHandler        func(http.ResponseWriter, *http.Request, Values, interface{})
-	NotFoundHandler     Handler
-	RequestStartHandler Handler
-	RequestEndHandler   Handler
-
 	trees map[string]*node
 }
 
@@ -19,68 +15,73 @@ func New() *Router {
 	return &Router{trees: make(map[string]*node)}
 }
 
-func explode(path string) (parts []string, names []string) {
+func explode(path string) (parts []string, names map[string]int) {
 
 	var (
 		nameidx int = -1
 		partidx int = 0
+		paramCounter = 0
 	)
 
 	for i := 0; i < len(path); i++ {
-
 		// recording name
 		if nameidx != -1 {
 			//found /
 			if path[i] == '/' {
-				names = append(names, path[nameidx:i])
+
+				if names == nil {
+					names = make(map[string]int)
+				}
+
+				names[path[nameidx:i]] = paramCounter
+				paramCounter++
+
 				nameidx = -1 // switch to normal recording
 				partidx = i
 			}
 		} else {
-
 			if path[i] == ':' || path[i] == '*' {
-
+				if path[i - 1] != '/' {
+					panic(fmt.Errorf("Inválid parameter : or * comes anwais after / - %q", path))
+				}
 				nameidx = i + 1
 				if partidx != i {
 					parts = append(parts, path[partidx:i])
 				}
 				parts = append(parts, path[i:nameidx])
-
 			}
-
 		}
-
 	}
 
 	if nameidx != -1 {
-		names = append(names, path[nameidx:])
+		if names == nil {
+			names = make(map[string]int)
+		}
+		names[path[nameidx:]] = paramCounter
+		paramCounter++
 	} else if partidx < len(path) {
 		parts = append(parts, path[partidx:])
 	}
-
 	return
 }
 
-func (router *Router) FindRoute(method string, path string) (Handler, Values) {
-	_node := router.trees[method]
-	if _node == nil {
-		return nil, Values{}
+func (router *Router) Finalize() {
+	for _, _node := range router.trees {
+		_node.finalize()
 	}
-	fn, values := _node.findRoute(path, 0)
-	if fn != nil {
-		return fn.handler, Values{Keys: fn.names, Values: values}
-	}
-	return nil, Values{}
 }
 
-//func (router *Router) FindRouteLoop(method string, path string) (Handler, Values) {
-//	_node := router.trees[method]
-//	if _node == nil {
-//		return nil, Values{}
-//	}
-//	fn, names, values := _node._findRoute(path, 0)
-//	return fn, Values{Keys: names, Values: values}
-//}
+func (router *Router) FindRoute(method string, path string) (Handler, Parameter) {
+	_node := router.trees[method]
+	if _node == nil {
+		return nil, Parameter{}
+	}
+	fn, wildcard := _node.findRoute(path)
+	if fn != nil {
+		return fn.handler, Parameter{node: fn, path: path, wildcard: wildcard}
+	}
+	return nil, Parameter{}
+}
 
 func (router *Router) AddRoute(method string, path string, fn Handler) {
 	parts, names := explode(path)
@@ -102,30 +103,10 @@ func (router *Router) String() string {
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	handler, variables := router.FindRoute(r.Method, r.URL.Path)
-
-	defer func() {
-		if router.PanicHandler != nil {
-			if err := recover(); err != nil {
-				router.PanicHandler(w, r, variables, err)
-			}
-		}
-		if router.RequestEndHandler != nil {
-			router.RequestEndHandler(w, r, variables)
-		}
-	}()
-
-	if router.RequestStartHandler != nil {
-		router.RequestStartHandler(w, r, variables)
-	}
-
 	if handler != nil {
 		handler(w, r, variables)
-	} else if router.NotFoundHandler != nil {
-		router.NotFoundHandler(w, r, variables)
 	} else {
 		http.NotFound(w, r)
 	}
-
 }

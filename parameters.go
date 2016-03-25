@@ -1,39 +1,71 @@
-package router
+package Router
 
-import "strconv"
+import "strings"
 
-type Values struct {
-	Keys   []string
-	Values []string
+// Parameter holds the parameters matched in the route
+type Parameter struct {
+	*node           // matched node
+	path     string // url path given
+	wildcard int    // size of the wildcard match in the end of the string
 }
 
-func (variables Values) Empty() bool {
-	return variables.Keys == nil
-}
 
-func (variables Values) Get(name string) string {
-	for i := 0; i < len(variables.Keys); i++ {
-		if variables.Keys[i] == name {
-			return variables.Values[i]
-		}
-	}
-	return ""
-}
-
-func (variables Values) GetIdx(name string) int {
-	for i := 0; i < len(variables.Keys); i++ {
-		if variables.Keys[i] == name {
-			return i
-		}
+// Index returns the index of the argument by name
+func (vv *Parameter) Index(name string) int {
+	if i, has := vv.names[name]; has {
+		return i
 	}
 	return -1
 }
 
-func (variables Values) Int(name string) (int, bool) {
-	var idx = variables.GetIdx(name)
-	if idx == -1 {
-		return 0, false
+
+//func (vv *Parameter) Has(name string) (has bool) {
+//	_, has = vv.names[name]
+//	return
+//}
+
+// Get returns the url parameter by name
+func (vv *Parameter) Get(name string) string {
+	if i, has := vv.names[name]; has {
+		return vv.findParam(i)
 	}
-	intv, err := strconv.ParseInt(variables.Values[idx], 10, strconv.IntSize)
-	return int(intv), err == nil
+	return ""
+}
+
+// findParam walks up the matched node looking for parameters returns the last parameter
+func (vv *Parameter) findParam(idx int) (param string) {
+
+	curIndex := len(vv.names) - 1
+	urlPath := vv.path
+	pathLen := len(vv.path)
+	_node := vv.node
+
+	if _node.text == "*" {
+		pathLen -= vv.wildcard
+		if curIndex == idx {
+			param = urlPath[pathLen:]
+			return
+		}
+		curIndex--
+		_node = _node.parent
+	}
+
+	for ; _node != nil; _node = _node.parent {
+		if _node.text == ":" {
+			ctn := strings.LastIndexByte(urlPath, '/')
+			if ctn == -1 {
+				break
+			}
+			pathLen = ctn + 1
+			if curIndex == idx {
+				param = urlPath[pathLen:]
+				break
+			}
+			curIndex--
+		} else {
+			pathLen -= len(_node.text)
+		}
+		urlPath = urlPath[0:pathLen]
+	}
+	return
 }
