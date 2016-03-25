@@ -1,3 +1,17 @@
+// Copyright 2016 José Santos <henrique_1609@me.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package Router
 
 import (
@@ -6,36 +20,32 @@ import (
 	"testing"
 )
 
-func stringsEq(one, two []string) bool {
-
+func assert_equals_string(one, two []string) bool {
 	if len(one) != len(two) {
 		return false
 	}
-
 	for i := 0; i < len(one); i++ {
 		if one[i] != two[i] {
 			return false
 		}
 	}
-
 	return true
 }
 
-var table = map[string][2][]string{
-	"/*name":                    {{"/", "*"}, {"name"}},
-	"/users/:name":              {{"/users/", ":"}, {"name"}},
-	"/users/:name/put":          {{"/users/", ":", "/put"}, {"name"}},
-	"/users/:name/put/:section": {{"/users/", ":", "/put/", ":"}, {"name", "section"}},
+func TestSplitURLPath(t *testing.T) {
 
-	"/customers/:name/put/:section":        {{"/customers/", ":", "/put/", ":"}, {"name", "section"}},
-	"/customers/groups/:name/put/:section": {{"/customers/groups/", ":", "/put/", ":"}, {"name", "section"}},
-}
-
-func TestSplit(t *testing.T) {
+	var table = map[string][2][]string{
+		"/*name":                               {{"/", "*"}, {"name"}},
+		"/users/:name":                         {{"/users/", ":"}, {"name"}},
+		"/users/:name/put":                     {{"/users/", ":", "/put"}, {"name"}},
+		"/users/:name/put/:section":            {{"/users/", ":", "/put/", ":"}, {"name", "section"}},
+		"/customers/:name/put/:section":        {{"/customers/", ":", "/put/", ":"}, {"name", "section"}},
+		"/customers/groups/:name/put/:section": {{"/customers/groups/", ":", "/put/", ":"}, {"name", "section"}},
+	}
 
 	for path, result := range table {
 		parts, names := splitURLpath(path)
-		if !stringsEq(parts, result[0]) {
+		if !assert_equals_string(parts, result[0]) {
 			t.Errorf("Expected %v %v: %v %v", result[0], result[1], parts, names)
 		}
 	}
