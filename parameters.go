@@ -9,7 +9,6 @@ type Parameter struct {
 	wildcard int    // size of the wildcard match in the end of the string
 }
 
-
 // Index returns the index of the argument by name
 func (vv *Parameter) Index(name string) int {
 	if i, has := vv.names[name]; has {
@@ -17,7 +16,6 @@ func (vv *Parameter) Index(name string) int {
 	}
 	return -1
 }
-
 
 //func (vv *Parameter) Has(name string) (has bool) {
 //	_, has = vv.names[name]

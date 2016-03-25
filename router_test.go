@@ -34,7 +34,7 @@ var table = map[string][2][]string{
 func TestSplit(t *testing.T) {
 
 	for path, result := range table {
-		parts, names := explode(path)
+		parts, names := splitURLpath(path)
 		if !stringsEq(parts, result[0]) {
 			t.Errorf("Expected %v %v: %v %v", result[0], result[1], parts, names)
 		}

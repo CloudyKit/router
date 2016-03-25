@@ -20,18 +20,18 @@ import (
 )
 
 type node struct {
-	text     string
-	names    map[string]int
-	handler  Handler
+	text    string
+	names   map[string]int
+	handler Handler
 
 	parent   *node
 	wildcard *node
 	colon    *node
 
-	nodes    nodes
-	start    byte
-	max      byte
-	indices  []uint8
+	nodes   nodes
+	start   byte
+	max     byte
+	indices []uint8
 }
 
 type nodes []*node
@@ -104,7 +104,7 @@ func (_node *node) addRoute(parts []string, names map[string]int, handler Handle
 
 	cNode, result, idx := _node.nextRoute(parts[0])
 
-	RESTART:
+RESTART:
 	if cNode == nil {
 		cNode = &node{text: parts[0]}
 		_node.nodes = append(_node.nodes, cNode)
@@ -143,8 +143,8 @@ func (_node *node) findRoute(urlPath string) (*node, int) {
 	pathLen := len(urlPath)
 
 	if urlByte >= _node.start && urlByte <= _node.max {
-		if i := _node.indices[urlByte - _node.start]; i != 0 {
-			cNode := _node.nodes[i - 1]
+		if i := _node.indices[urlByte-_node.start]; i != 0 {
+			cNode := _node.nodes[i-1]
 			nodeLen := len(cNode.text)
 			if nodeLen < pathLen {
 				if cNode.text == urlPath[0:nodeLen] {
@@ -188,7 +188,7 @@ func (_node *node) optimizeRoutes() {
 		}
 
 		_node.start = _node.nodes[0].text[0]
-		_node.max = _node.nodes[len(_node.nodes) - 1].text[0]
+		_node.max = _node.nodes[len(_node.nodes)-1].text[0]
 
 		for i := 0; i < len(_node.nodes); i++ {
 			cNode := _node.nodes[i]
@@ -196,7 +196,7 @@ func (_node *node) optimizeRoutes() {
 
 			cByte := int(cNode.text[0] - _node.start)
 			if cByte >= len(_node.indices) {
-				_node.indices = append(_node.indices, make([]uint8, cByte + 1 - len(_node.indices))...)
+				_node.indices = append(_node.indices, make([]uint8, cByte+1-len(_node.indices))...)
 			}
 			_node.indices[cByte] = uint8(i + 1)
 			cNode.optimizeRoutes()
@@ -234,7 +234,7 @@ func (_node *node) string(col int) string {
 	col += len(_node.text) + 4
 	for i := 0; i < len(_node.indices); i++ {
 		if j := _node.indices[i]; j != 0 {
-			str += _node.nodes[j - 1].string(col)
+			str += _node.nodes[j-1].string(col)
 		}
 	}
 	if _node.colon != nil {

@@ -15,12 +15,12 @@ func New() *Router {
 	return &Router{trees: make(map[string]*node)}
 }
 
-func explode(path string) (parts []string, names map[string]int) {
+func splitURLpath(path string) (parts []string, names map[string]int) {
 
 	var (
-		nameidx int = -1
-		partidx int = 0
-		paramCounter = 0
+		nameidx      int = -1
+		partidx      int
+		paramCounter int
 	)
 
 	for i := 0; i < len(path); i++ {
@@ -41,7 +41,7 @@ func explode(path string) (parts []string, names map[string]int) {
 			}
 		} else {
 			if path[i] == ':' || path[i] == '*' {
-				if path[i - 1] != '/' {
+				if path[i-1] != '/' {
 					panic(fmt.Errorf("Inválid parameter : or * comes anwais after / - %q", path))
 				}
 				nameidx = i + 1
@@ -84,7 +84,7 @@ func (router *Router) FindRoute(method string, path string) (Handler, Parameter)
 }
 
 func (router *Router) AddRoute(method string, path string, fn Handler) {
-	parts, names := explode(path)
+	parts, names := splitURLpath(path)
 	_node := router.trees[method]
 	if _node == nil {
 		_node = &node{}
