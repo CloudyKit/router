@@ -165,7 +165,7 @@ func TestGetParam(t *testing.T) {
 			t.Errorf("%q was not found \n %s", benchTest[i][0], benchRouter)
 		}
 		for j := 1; j < len(benchTest[i]); j++ {
-			param := vl.Get(benchTest[i][j])
+			param := vl.ByName(benchTest[i][j])
 			if param != benchTest[i][j] {
 				t.Errorf("%s Expected param %q get %q", benchTest[i][0], benchTest[i][j], param)
 			}
@@ -177,7 +177,7 @@ func BenchmarkGetParam1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		benchtest := benchTest[0]
 		_, vl := benchRouter.FindRoute("GET", benchtest[0])
-		param := vl.Get(benchtest[1])
+		param := vl.ByName(benchtest[1])
 		if param != benchtest[1] {
 			b.Errorf("Expected param %q get %q", benchtest[1], param)
 		}
@@ -192,7 +192,7 @@ func BenchmarkGetParams(b *testing.B) {
 				b.Errorf("%q was not found", benchTest[i][0])
 			}
 			for j := 1; j < len(benchTest[i]); j++ {
-				param := vl.Get(benchTest[i][j])
+				param := vl.ByName(benchTest[i][j])
 				if param != benchTest[i][j] {
 					b.Errorf("Expected param %q get %q", benchTest[i][j], param)
 				}
