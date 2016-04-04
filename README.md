@@ -10,7 +10,7 @@ CloudyKit Router was developed to be a very fast router on matching and retrievi
 
 ### Benchmarks
 
-I benchmark CloudyKit router against "github.com/julienschmidt/httprouter" and the results are pretty good, the benchmark consist of test the routes listem below per each interaction.
+I benchmark CloudyKit router against "github.com/julienschmidt/httprouter" and the results are pretty good, the benchmark consist of test the routes listem below per each iteration.
 
 ```go
 	/users
