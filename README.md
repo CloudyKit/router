@@ -13,11 +13,11 @@ CloudyKit Router was developed to be a very fast router on matching and retrievi
 I benchmark CloudyKit router against "github.com/julienschmidt/httprouter" and the results are pretty good, the benchmark consist of test the routes listem below per each interaction.
 
 ```go
-	newRoute("/users"),
-	newRoute("/users/:userId", "131231"),
-	newRoute("/users/:userId/subscriptions", "131231"),
-	newRoute("/users/:userId/subscriptions/:subscription", "131231", "12"),
-	newRoute("/assets/*files", "css/styles.css"),
+	/users
+	/users/:userId
+	/users/:userId/subscriptions
+	/users/:userId/subscriptions/:subscription
+	/assets/*file
 ```
 
 Benchmark source: https://github.com/CloudyKit/benchmarks/router
