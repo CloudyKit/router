@@ -23,8 +23,8 @@ type Parameter struct {
 	wildcard int    // size of the wildcard match in the end of the string
 }
 
-//ByIndex returns the index of the argument by name
-func (vv *Parameter) ByIndex(name string) int {
+//IndexOf returns the index of the argument by name
+func (vv *Parameter) IndexOf(name string) int {
 	if i, has := vv.names[name]; has {
 		return i
 	}
@@ -63,24 +63,23 @@ func (vv *Parameter) findParam(idx int) (param string) {
 	}
 
 	for _node != nil {
-
 		if _node.text[0] == ':' {
 			ctn := strings.LastIndexByte(urlPath, '/')
 			if ctn == -1 {
-				break
+				return
 			}
 			pathLen = ctn + 1
 			if curIndex == idx {
 				param = urlPath[pathLen:]
-				break
+				return
 			}
 			curIndex--
 		} else {
 			pathLen -= len(_node.text)
 		}
-
 		urlPath = urlPath[0:pathLen]
 		_node = _node.parent
+
 	}
 	return
 }
