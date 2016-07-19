@@ -91,6 +91,7 @@ func (router *Router) FindRoute(method string, path string) (Handler, Parameter)
 		return nil, Parameter{}
 	}
 	fn, wildcard := _node.findRoute(path)
+
 	if fn != nil {
 		return fn.handler, Parameter{node: fn, path: path, wildcard: wildcard}
 	}

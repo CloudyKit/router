@@ -15,6 +15,7 @@
 package router
 
 import (
+	"net/http"
 	"sort"
 	"strings"
 )
@@ -137,6 +138,12 @@ RESTART:
 	cNode.addRoute(parts[1:], names, handler)
 }
 
+var redirectNode = &node{
+	handler: func(w http.ResponseWriter, r *http.Request, p Parameter) {
+		http.Redirect(w, r, r.URL.Path+"/", http.StatusFound)
+	},
+}
+
 func (_node *node) findRoute(urlPath string) (*node, int) {
 
 	urlByte := urlPath[0]
@@ -146,6 +153,7 @@ func (_node *node) findRoute(urlPath string) (*node, int) {
 		if i := _node.indices[urlByte-_node.start]; i != 0 {
 			cNode := _node.nodes[i-1]
 			nodeLen := len(cNode.text)
+
 			if nodeLen < pathLen {
 				if cNode.text == urlPath[0:nodeLen] {
 					if cNode, wildcard := cNode.findRoute(urlPath[nodeLen:]); cNode != nil {
@@ -157,6 +165,8 @@ func (_node *node) findRoute(urlPath string) (*node, int) {
 					return cNode.wildcard, 0
 				}
 				return cNode, 0
+			} else if nodeLen == pathLen+1 && cNode.text[nodeLen-1] == '/' {
+				return redirectNode, 0
 			}
 		}
 	}
