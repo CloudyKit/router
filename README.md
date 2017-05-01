@@ -5,7 +5,7 @@ CloudyKit Router was developed to be a very fast router on matching and retrievi
 ### Main characteristics
 
  1. Use prefix tree with special nodes to match dynamic sentences and catch all.
- 2. No allocations are all, matching and retrieve parameters don't allocates.
+ 2. No allocations, matching and retrieve parameters don't allocates.
  3. Nodes has precedence when matching, text node then single sentence node then wildcard node
 
 ### Benchmarks

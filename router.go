@@ -22,11 +22,11 @@ import (
 type Handler func(http.ResponseWriter, *http.Request, Parameter)
 
 type Router struct {
-	trees map[string]*node
+	trees map[string]*routeNode
 }
 
 func New() *Router {
-	return &Router{trees: make(map[string]*node)}
+	return &Router{trees: make(map[string]*routeNode)}
 }
 
 func splitURLpath(path string) (parts []string, names map[string]int) {
@@ -93,7 +93,7 @@ func (router *Router) FindRoute(method string, path string) (Handler, Parameter)
 	fn, wildcard := _node.findRoute(path)
 
 	if fn != nil {
-		return fn.handler, Parameter{node: fn, path: path, wildcard: wildcard}
+		return fn.handler, Parameter{routeNode: fn, path: path, wildcard: wildcard}
 	}
 	return nil, Parameter{}
 }
@@ -102,7 +102,7 @@ func (router *Router) AddRoute(method string, path string, fn Handler) {
 	parts, names := splitURLpath(path)
 	_node := router.trees[method]
 	if _node == nil {
-		_node = &node{}
+		_node = &routeNode{}
 		router.trees[method] = _node
 	}
 	_node.addRoute(parts, names, fn)

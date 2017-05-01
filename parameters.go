@@ -16,14 +16,14 @@ package router
 
 import "strings"
 
-//Parameter holds the parameters matched in the route
+// Parameter holds the parameters matched in the route
 type Parameter struct {
-	*node           // matched node
-	path     string // url path given
-	wildcard int    // size of the wildcard match in the end of the string
+	*routeNode        // matched node
+	path       string // url path given
+	wildcard   int    // size of the wildcard match in the end of the string
 }
 
-//IndexOf returns the index of the argument by name
+// IndexOf returns the index of the argument by name
 func (vv *Parameter) IndexOf(name string) int {
 	if i, has := vv.names[name]; has {
 		return i
@@ -31,12 +31,12 @@ func (vv *Parameter) IndexOf(name string) int {
 	return -1
 }
 
-//Len returns number arguments matched in the provided URL
+// Len returns number arguments matched in the provided URL
 func (vv *Parameter) Len() int {
 	return len(vv.names)
 }
 
-//ByName returns the url parameter by name
+// ByName returns the url parameter by name
 func (vv *Parameter) ByName(name string) string {
 	if i, has := vv.names[name]; has {
 		return vv.findParam(i)
@@ -44,41 +44,42 @@ func (vv *Parameter) ByName(name string) string {
 	return ""
 }
 
-//findParam walks up the matched node looking for parameters returns the last parameter
+// findParam walks up the matched node looking for parameters returns the last parameter
 func (vv *Parameter) findParam(idx int) (param string) {
+	var (
+		curIndex = len(vv.names) - 1
+		urlPath  = vv.path
+		pathLen  = len(vv.path)
+		curNode  = vv.routeNode
+	)
 
-	curIndex := len(vv.names) - 1
-	urlPath := vv.path
-	pathLen := len(vv.path)
-	_node := vv.node
-
-	if _node.text[0] == '*' {
+	if curNode.text[0] == '*' {
 		pathLen -= vv.wildcard
 		if curIndex == idx {
 			param = urlPath[pathLen:]
 			return
 		}
 		curIndex--
-		_node = _node.parent
+		curNode = curNode.parent
 	}
 
-	for _node != nil {
-		if _node.text[0] == ':' {
-			ctn := strings.LastIndexByte(urlPath, '/')
-			if ctn == -1 {
+	for curNode != nil {
+		if curNode.text[0] == ':' {
+			nextSlash := strings.LastIndexByte(urlPath, '/')
+			if nextSlash == -1 {
 				return
 			}
-			pathLen = ctn + 1
+			pathLen = nextSlash + 1
 			if curIndex == idx {
 				param = urlPath[pathLen:]
 				return
 			}
 			curIndex--
 		} else {
-			pathLen -= len(_node.text)
+			pathLen -= len(curNode.text)
 		}
 		urlPath = urlPath[0:pathLen]
-		_node = _node.parent
+		curNode = curNode.parent
 
 	}
 	return
