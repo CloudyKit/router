@@ -23,8 +23,8 @@ type Parameter struct {
 	wildcard   int    // size of the wildcard match in the end of the string
 }
 
-// IndexOf returns the index of the argument by name
-func (vv *Parameter) IndexOf(name string) int {
+// Index returns the index of the argument by name
+func (vv *Parameter) Index(name string) int {
 	if i, has := vv.names[name]; has {
 		return i
 	}
@@ -36,8 +36,8 @@ func (vv *Parameter) Len() int {
 	return len(vv.names)
 }
 
-// ByName returns the url parameter by name
-func (vv *Parameter) ByName(name string) string {
+// Get returns the url parameter by name
+func (vv *Parameter) Get(name string) string {
 	if i, has := vv.names[name]; has {
 		return vv.findParam(i)
 	}
